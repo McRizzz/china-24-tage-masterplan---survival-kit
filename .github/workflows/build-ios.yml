@@ -13,59 +13,22 @@ jobs:
       - name: Code auschecken
         uses: actions/checkout@v4
 
-      - name: Node.js einrichten
+      - name: Node.js 22 einrichten
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Dependencies installieren & Web App bauen
         run: |
           npm install
           npm run build
 
-      - name: Capacitor & iOS Pods komplett sauber einrichten
+      - name: Capacitor 6 Setup
         run: |
-          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/ios@latest
-          
-          # Initialisierung mit Web-Dir
+          npm install @capacitor/core@^6.0.0 @capacitor/cli@^6.0.0 @capacitor/ios@^6.0.0
           npx cap init "China Reise" "com.chinareise.app" --web-dir "dist"
-          
-          # iOS hinzufügen ohne automatisches Pod-Install
-          npx cap add ios || true
-          
-          # Podfile direkt auf iOS 15.0 erzwingen
-          cat << 'EOF' > ios/App/Podfile
-          platform :ios, '15.0'
-          use_frameworks!
-
-          # workaround to avoid Xcode caching of Pods that requires
-          # git repo to have a branch or label
-          def capacitor_pods
-            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-          end
-
-          target 'App' do
-            capacitor_pods
-          end
-
-          post_install do |installer|
-            installer.pods_project.targets.each do |target|
-              target.build_configurations.each do |config|
-                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-              end
-            end
-          end
-          EOF
-
-          # CocoaPods mit frischem Trunk installieren
-          cd ios/App
-          pod repo update
-          pod install
-          cd ../..
-          
-          # Web-Assets in natives iOS-Projekt kopieren
-          npx cap copy ios
+          npx cap add ios
+          npx cap sync ios
 
       - name: iOS App kompilieren (Xcode Build)
         run: |
