@@ -2,12 +2,12 @@ name: Build iOS IPA
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch: # Erlaubt manuelles Starten per Klick
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build-ios:
-    runs-on: macos-14 # Virtueller Cloud-Mac von GitHub
+    runs-on: macos-14
 
     steps:
       - name: Code auschecken
@@ -26,6 +26,7 @@ jobs:
       - name: Capacitor iOS einrichten
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/ios
+          npx cap init "China Reise" "com.chinareise.app" --web-dir "dist"
           npx cap add ios
           npx cap sync ios
 
@@ -37,7 +38,9 @@ jobs:
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
 
       - name: In .ipa Datei umwandeln
         run: |
