@@ -1,7 +1,0 @@
-{
-  "name": "China 24-Tage Masterplan & Survival Kit",
-  "description": "Interaktiver 24-Tage-Reiseplan für die klassische Goldene Route durch China (Shanghai, Peking, Xi'an, Chengdu, Guilin, Hangzhou, Suzhou) inklusive digitalem Survival Kit (Alipay, eSIM, Zugtickets, Notfall-Sprachkarten, Budgetrechner und AI Reise-Concierge).",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
-
