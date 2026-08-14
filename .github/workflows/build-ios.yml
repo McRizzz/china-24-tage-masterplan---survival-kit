@@ -1,0 +1,52 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Erlaubt manuelles Starten per Klick
+
+jobs:
+  build-ios:
+    runs-on: macos-14 # Virtueller Cloud-Mac von GitHub
+
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Dependencies installieren & App bauen
+        run: |
+          npm install
+          npm run build
+
+      - name: Capacitor iOS einrichten
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/ios
+          npx cap add ios
+          npx cap sync ios
+
+      - name: iOS App kompilieren (.app erstellen)
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: In .ipa Datei umwandeln
+        run: |
+          mkdir -p Payload
+          cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -r China-Reise-App.ipa Payload
+
+      - name: IPA als Download bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: China-Reise-App-IPA
+          path: China-Reise-App.ipa
