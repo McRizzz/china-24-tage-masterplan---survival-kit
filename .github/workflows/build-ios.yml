@@ -18,26 +18,56 @@ jobs:
         with:
           node-version: 20
 
-      - name: Dependencies installieren & App bauen
+      - name: Dependencies installieren & Web App bauen
         run: |
           npm install
           npm run build
 
-      - name: Capacitor iOS einrichten & Podfile anpassen
+      - name: Capacitor & iOS Pods komplett sauber einrichten
         run: |
-          npm install @capacitor/core @capacitor/cli @capacitor/ios
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/ios@latest
+          
+          # Initialisierung mit Web-Dir
           npx cap init "China Reise" "com.chinareise.app" --web-dir "dist"
-          npx cap add ios
           
-          # iOS Deployment Target im Podfile auf 14.0 anheben
-          sed -i '' "s/platform :ios, '13.0'/platform :ios, '14.0'/g" ios/App/Podfile || true
-          sed -i '' "s/platform :ios, '12.0'/platform :ios, '14.0'/g" ios/App/Podfile || true
+          # iOS hinzufügen ohne automatisches Pod-Install
+          npx cap add ios || true
           
-          # CocoaPods Sync & Install durchführen
-          cd ios/App && pod install --repo-update && cd ../..
-          npx cap sync ios
+          # Podfile direkt auf iOS 15.0 erzwingen
+          cat << 'EOF' > ios/App/Podfile
+          platform :ios, '15.0'
+          use_frameworks!
 
-      - name: iOS App kompilieren (.app erstellen)
+          # workaround to avoid Xcode caching of Pods that requires
+          # git repo to have a branch or label
+          def capacitor_pods
+            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+          end
+
+          target 'App' do
+            capacitor_pods
+          end
+
+          post_install do |installer|
+            installer.pods_project.targets.each do |target|
+              target.build_configurations.each do |config|
+                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+              end
+            end
+          end
+          EOF
+
+          # CocoaPods mit frischem Trunk installieren
+          cd ios/App
+          pod repo update
+          pod install
+          cd ../..
+          
+          # Web-Assets in natives iOS-Projekt kopieren
+          npx cap copy ios
+
+      - name: iOS App kompilieren (Xcode Build)
         run: |
           cd ios/App
           xcodebuild -workspace App.xcworkspace \
@@ -47,7 +77,8 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
 
       - name: In .ipa Datei umwandeln
         run: |
