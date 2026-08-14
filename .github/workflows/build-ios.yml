@@ -23,11 +23,18 @@ jobs:
           npm install
           npm run build
 
-      - name: Capacitor iOS einrichten
+      - name: Capacitor iOS einrichten & Podfile anpassen
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/ios
           npx cap init "China Reise" "com.chinareise.app" --web-dir "dist"
           npx cap add ios
+          
+          # iOS Deployment Target im Podfile auf 14.0 anheben
+          sed -i '' "s/platform :ios, '13.0'/platform :ios, '14.0'/g" ios/App/Podfile || true
+          sed -i '' "s/platform :ios, '12.0'/platform :ios, '14.0'/g" ios/App/Podfile || true
+          
+          # CocoaPods Sync & Install durchführen
+          cd ios/App && pod install --repo-update && cd ../..
           npx cap sync ios
 
       - name: iOS App kompilieren (.app erstellen)
